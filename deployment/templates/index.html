@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emotion Detection</title>
+    <title>Zen Study - Study Space</title>
     <meta name="description" content="An advanced deep learning application to classify facial expressions and detect emotions in real-time or from uploaded image files.">
     <!-- Google Fonts: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -222,6 +222,35 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Stress Detection Alert Modal (Guided Breathing Exercise) -->
+    <div id="stress-modal" class="stress-modal-overlay hidden">
+        <div class="stress-modal-card">
+            <div class="modal-header">
+                <span class="modal-alert-icon">🌬️</span>
+                <h2>Take a Moment to Breathe</h2>
+            </div>
+            <p class="modal-desc">Our AI model detected continuous indicators of stress. Let's do a quick breathing exercise to clear your mind and restore focus.</p>
+            
+            <div class="breathing-guide-area">
+                <div class="breathing-ring-outer">
+                    <div class="breathing-ring-inner" id="breathing-circle"></div>
+                </div>
+                <div class="breathing-label" id="breathing-text">Prepare...</div>
+            </div>
+            
+            <div class="wellness-tips">
+                <h4>💡 Quick Wellness Tips:</h4>
+                <ul>
+                    <li>Take 3 deep, controlled breaths following the pulsing guide.</li>
+                    <li>Loosen your jaw and roll your shoulders back.</li>
+                    <li>Consider drinking a glass of water before resuming.</li>
+                </ul>
+            </div>
+            
+            <button id="btn-close-stress" class="action-btn modal-btn">I'm Refreshed & Ready</button>
+        </div>
     </div>
 
     <!-- Custom JS -->

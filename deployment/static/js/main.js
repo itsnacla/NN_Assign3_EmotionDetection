@@ -10,6 +10,11 @@ const frameThrottleMs = 180; // Send frames roughly 5-6 times per second to prev
 let lastBeepTime = 0;
 const beepCooldownMs = 3000; // 3 seconds cooldown between alerts
 
+// State Variables for Stress Intervention Modal
+let isStressModalActive = false;
+let consecutiveStressTicks = 0;
+let breathingIntervalId = null;
+
 // Web Audio API Beep Synthesizer (Loud Alarm style)
 function playBeep(frequency = 880, duration = 0.5) {
     try {
@@ -108,6 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch logs initially and setup periodic logs telemetry fetcher
     fetchLogs();
     setInterval(fetchLogs, 2500);
+    
+    // Setup Stress Modal Button close listener
+    const btnCloseStress = document.getElementById('btn-close-stress');
+    if (btnCloseStress) {
+        btnCloseStress.addEventListener('click', closeStressModal);
+    }
 });
 
 // Mode Switching (Webcam vs. Upload)
@@ -437,14 +448,24 @@ function updateMetrics(dominant, scores) {
         }
     }
     
-    // Play a stress alert beep if dominant emotion implies stress (Angry, Fearful, Sad) and is > 40% confident
+    // Play stress alarm and track consecutive ticks to trigger the guided breathing modal
     const stressEmotions = ['Angry', 'Fearful', 'Sad'];
     if (stressEmotions.includes(dominant) && scores[dominant] > 0.40) {
+        consecutiveStressTicks++;
+        
+        // Trigger beep alert
         const now = Date.now();
         if (now - lastBeepTime > beepCooldownMs) {
             lastBeepTime = now;
-            playBeep(880, 1.2); // Play a loud buzzy warning beep (880Hz, 1.2s duration)
+            playBeep(880, 0.5); // Play warning beep
         }
+        
+        // If user remains stressed for 5 consecutive ticks (~1 second of continuous stress), trigger intervention
+        if (consecutiveStressTicks >= 5 && !isStressModalActive) {
+            triggerStressIntervention();
+        }
+    } else {
+        consecutiveStressTicks = 0;
     }
 }
 
@@ -534,4 +555,76 @@ function renderLogsTable(logs) {
             </tr>
         `;
     }).join('');
+}
+
+// Show the Guided Breathing Wellness Modal and pause capturing
+function triggerStressIntervention() {
+    isStressModalActive = true;
+    consecutiveStressTicks = 0;
+    
+    // Stop the webcam capture loop visually
+    stopFrameLoop();
+    
+    // Display the modal
+    const modal = document.getElementById('stress-modal');
+    if (modal) modal.classList.remove('hidden');
+    
+    // Play a soft wellness major triad notification chord (C Major)
+    playBeep(523.25, 0.35); // C5
+    setTimeout(() => playBeep(659.25, 0.35), 120); // E5
+    setTimeout(() => playBeep(783.99, 0.6), 240); // G5
+    
+    // Start breathing guide
+    startBreathingGuide();
+}
+
+// Close Guided Breathing Wellness Modal and resume capturing
+function closeStressModal() {
+    const modal = document.getElementById('stress-modal');
+    if (modal) modal.classList.add('hidden');
+    
+    stopBreathingGuide();
+    isStressModalActive = false;
+    
+    // Play a friendly resume sound
+    playBeep(659.25, 0.2);
+    setTimeout(() => playBeep(880, 0.3), 100);
+    
+    // Resume the webcam loop
+    if (streamActive && currentMode === 'webcam') {
+        startFrameLoop();
+    }
+}
+
+// Guided breathing animation cycle controller (Inhale 4s / Exhale 4s)
+function startBreathingGuide() {
+    const circle = document.getElementById('breathing-circle');
+    const label = document.getElementById('breathing-text');
+    if (!circle || !label) return;
+    
+    let isInhaling = true;
+    circle.className = 'breathing-ring-inner expand';
+    label.textContent = 'Inhale deeply...';
+    label.style.color = '#38bdf8';
+    
+    breathingIntervalId = setInterval(() => {
+        isInhaling = !isInhaling;
+        if (isInhaling) {
+            circle.className = 'breathing-ring-inner expand';
+            label.textContent = 'Inhale deeply...';
+            label.style.color = '#38bdf8';
+        } else {
+            circle.className = 'breathing-ring-inner shrink';
+            label.textContent = 'Exhale slowly...';
+            label.style.color = '#ff416c';
+        }
+    }, 4000);
+}
+
+// Clear guided breathing cycle timers
+function stopBreathingGuide() {
+    if (breathingIntervalId) {
+        clearInterval(breathingIntervalId);
+        breathingIntervalId = null;
+    }
 }

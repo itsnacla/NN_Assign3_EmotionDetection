@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Study - Emotion Detection While Studying</title>
+    <meta name="description" content="An AI-powered smart study assistant designed to analyze your emotions, detect stress, and help you maintain mental wellness while studying.">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS (Shares dashboard styles) -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+
+    <div class="landing-container">
+        <!-- Hero Header -->
+        <header class="landing-header">
+            <div class="logo-area">
+                <span class="logo-icon">🧠</span>
+                <h1><span class="accent-text">Zen</span>Study</h1>
+            </div>
+            <h2>Optimize Your Study Focus. Manage Stress in Real-Time.</h2>
+            <p class="landing-subtitle">Zen Study uses deep learning emotion detection to track your focus levels during long study sessions and alerts you when it's time to take a mental breath.</p>
+        </header>
+
+        <!-- Main Features Grid -->
+        <section class="features-grid" aria-label="Product Features">
+            <div class="feature-card">
+                <div class="feature-icon">📹</div>
+                <h3>Real-Time Focus Telemetry</h3>
+                <p>Monitors your facial expressions during study sessions to detect focus drop, distraction, or fatigue.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🚨</div>
+                <h3>Intelligent Stress Warning</h3>
+                <p>Instantly flags stress indicators (Angry, Sad, Fearful) and generates a friendly auditory alarm beep.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🌬️</div>
+                <h3>Active Guided Breathing</h3>
+                <p>If you enter a high-stress phase, the companion prompts a guided breathing exercise to reset your heart rate and focus.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Telemetry Event Logger</h3>
+                <p>Automatically records your emotion log to a local CSV database (`user_emotions.csv`) for Excel productivity audits.</p>
+            </div>
+        </section>
+
+        <!-- CTA Action Area -->
+        <div class="cta-area">
+            <a href="/dashboard" class="action-btn landing-cta">Enter Study Space</a>
+            <p class="footnote">Webcam access required for facial telemetry features. All processing is computed locally.</p>
+        </div>
+    </div>
+</body>
+</html>
