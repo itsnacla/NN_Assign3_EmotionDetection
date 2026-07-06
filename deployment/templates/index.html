@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection</title>
+    <meta name="description" content="An advanced deep learning application to classify facial expressions and detect emotions in real-time or from uploaded image files.">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <div class="dashboard-container">
+        <!-- Sidebar/Header Section -->
+        <header class="app-header">
+            <div class="logo-area">
+                <h1>Emotion <span class="accent-text">Detector</span></h1>
+            </div>
+            <p class="subtitle">Deep Learning Facial Emotion Expression Analytics</p>
+            
+            <div class="mode-selector">
+                <button id="btn-webcam-mode" class="mode-btn active" onclick="switchMode('webcam')">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Live Webcam
+                </button>
+                <button id="btn-upload-mode" class="mode-btn" onclick="switchMode('upload')">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Upload Image
+                </button>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-indicator">
+                    <span id="status-dot" class="dot idle"></span>
+                    <span id="status-text">Server connected & idle</span>
+                </div>
+                <div id="processing-info" class="processing-info hidden">
+                    <span class="spinner"></span> Detecting faces...
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Area -->
+        <main class="workspace">
+            <!-- Left Side: Interactive Preview Panel -->
+            <section class="preview-card" aria-label="Visual Input Stream">
+                <!-- Webcam Workspace -->
+                <div id="webcam-workspace" class="workspace-panel active">
+                    <div class="media-container">
+                        <video id="webcam-stream" autoplay playsinline muted></video>
+                        <canvas id="webcam-overlay"></canvas>
+                        
+                        <!-- Overlay prompt for camera activation -->
+                        <div id="camera-prompt" class="overlay-prompt">
+                            <div class="prompt-content">
+                                <div class="prompt-icon">📷</div>
+                                <h3>Webcam Access Required</h3>
+                                <p>Enable your webcam to start real-time emotion telemetry analytics.</p>
+                                <button id="btn-start-camera" class="action-btn">Initialize Camera</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-controls">
+                        <button id="btn-toggle-stream" class="control-btn primary hidden">Stop Stream</button>
+                    </div>
+                </div>
+
+                <!-- Upload Workspace -->
+                <div id="upload-workspace" class="workspace-panel">
+                    <div class="media-container">
+                        <div id="drag-drop-zone" class="drag-drop-zone">
+                            <input type="file" id="image-input" accept="image/*" class="file-input">
+                            <div class="upload-prompt">
+                                <div class="upload-icon">📤</div>
+                                <h3>Drag & Drop Image</h3>
+                                <p>or click to browse local files (JPG, PNG, WEBP)</p>
+                            </div>
+                        </div>
+                        <div id="upload-preview-container" class="preview-container hidden">
+                            <img id="upload-preview" alt="Uploaded Face Preview">
+                            <canvas id="upload-overlay"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-controls">
+                        <button id="btn-reset-upload" class="control-btn secondary hidden">Upload Another</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Analytics & Statistics Panel -->
+            <section class="analytics-card" aria-label="Prediction Metrics">
+                <div class="analytics-header">
+                    <h2>Emotion Analytics</h2>
+                    <span class="badge" id="dominant-emotion-badge">No face detected</span>
+                </div>
+                
+                <div class="emotions-distribution" id="emotions-distribution">
+                    <!-- Progress Bar for Angry -->
+                    <div class="emotion-metric-row" data-emotion="Angry">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">😠</span>
+                            <span class="emotion-name">Angry</span>
+                            <span class="emotion-pct" id="pct-Angry">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill angry" id="bar-Angry" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar for Disgusted -->
+                    <div class="emotion-metric-row" data-emotion="Disgusted">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">🤢</span>
+                            <span class="emotion-name">Disgusted</span>
+                            <span class="emotion-pct" id="pct-Disgusted">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill disgusted" id="bar-Disgusted" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar for Fearful -->
+                    <div class="emotion-metric-row" data-emotion="Fearful">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">😨</span>
+                            <span class="emotion-name">Fearful</span>
+                            <span class="emotion-pct" id="pct-Fearful">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill fearful" id="bar-Fearful" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar for Happy -->
+                    <div class="emotion-metric-row" data-emotion="Happy">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">😊</span>
+                            <span class="emotion-name">Happy</span>
+                            <span class="emotion-pct" id="pct-Happy">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill happy" id="bar-Happy" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar for Neutral -->
+                    <div class="emotion-metric-row" data-emotion="Neutral">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">😐</span>
+                            <span class="emotion-name">Neutral</span>
+                            <span class="emotion-pct" id="pct-Neutral">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill neutral" id="bar-Neutral" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar for Sad -->
+                    <div class="emotion-metric-row" data-emotion="Sad">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">😢</span>
+                            <span class="emotion-name">Sad</span>
+                            <span class="emotion-pct" id="pct-Sad">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill sad" id="bar-Sad" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar for Surprised -->
+                    <div class="emotion-metric-row" data-emotion="Surprised">
+                        <div class="metric-label">
+                            <span class="emotion-emoji">😲</span>
+                            <span class="emotion-name">Surprised</span>
+                            <span class="emotion-pct" id="pct-Surprised">0%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill surprised" id="bar-Surprised" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <p class="footnote">Model accuracy is based on training outputs. Make sure face is well lit and directly facing the camera for best performance.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
