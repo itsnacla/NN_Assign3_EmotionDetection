@@ -604,61 +604,32 @@ body {
     letter-spacing: 0.5px;
 }
 
-.table-container {
-    max-height: 180px;
-    overflow-y: auto;
-    border-radius: 8px;
+.chart-container {
+    height: 165px;
+    background: rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-color);
-    background: rgba(0, 0, 0, 0.2);
-}
-
-/* Custom scrollbar for log table container */
-.table-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.table-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-}
-
-.table-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-#log-table {
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 10px;
+    position: relative;
     width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-    text-align: left;
 }
 
-#log-table th {
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-muted);
+.chart-legend-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-top: 8px;
+    padding: 0 4px;
     font-weight: 500;
-    position: sticky;
-    top: 0;
-    z-index: 1;
 }
 
-#log-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    color: var(--text-main);
+.legend-calm {
+    color: #38bdf8;
 }
 
-#log-table tr:last-child td {
-    border-bottom: none;
-}
-
-.empty-log {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 20px !important;
-    font-style: italic;
+.legend-stress {
+    color: #ff416c;
 }
 
 /* Landing Page Styles */

@@ -15,6 +15,9 @@ let isStressModalActive = false;
 let consecutiveStressTicks = 0;
 let breathingIntervalId = null;
 
+// Telemetry History Graph
+let telemetryChart = null;
+
 // Web Audio API Beep Synthesizer (Loud Alarm style)
 function playBeep(frequency = 880, duration = 0.5) {
     try {
@@ -109,6 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Auto-start webcam when page opens
     startWebcam();
+    
+    // Initialize telemetry chart
+    initChart();
     
     // Fetch logs initially and setup periodic logs telemetry fetcher
     fetchLogs();
@@ -512,49 +518,136 @@ function showProcessing(show) {
     }
 }
 
+// Initialize Chart.js stress telemetry graph
+function initChart() {
+    const ctx = document.getElementById('telemetry-chart');
+    if (!ctx) return;
+    
+    // Set global font family for Chart.js
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+    Chart.defaults.font.size = 10;
+    Chart.defaults.color = '#8e90ab';
+    
+    telemetryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [], // Timestamps
+            datasets: [{
+                label: 'Stress Index %',
+                data: [], // Stress level history
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#38bdf8',
+                pointBorderColor: 'transparent',
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(20, 20, 36, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#38bdf8',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                    borderWidth: 1,
+                    padding: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `Stress Level: ${context.parsed.y.toFixed(0)}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 5 }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    ticks: { stepSize: 25 }
+                }
+            }
+        }
+    });
+}
+
 // Fetch recently logged events from CSV database
 async function fetchLogs() {
     try {
         const response = await fetch('/logs');
         if (response.ok) {
             const logs = await response.json();
-            renderLogsTable(logs);
+            updateTelemetryChart(logs);
         }
     } catch (err) {
         console.error("Error fetching logs:", err);
     }
 }
 
-// Render retrieved CSV database rows to the logs table in UI
-function renderLogsTable(logs) {
-    const tableBody = document.getElementById('log-table-body');
-    if (!tableBody) return;
+// Update the chart dataset dynamically from logs history
+function updateTelemetryChart(logs) {
+    if (!telemetryChart) return;
     
     if (!logs || logs.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="3" class="empty-log">No logs recorded. Start camera to write entries.</td></tr>`;
         return;
     }
     
-    const emojiMap = {
-        "Angry": "😠",
-        "Disgusted": "🤢",
-        "Fearful": "😨",
-        "Happy": "😊",
-        "Neutral": "😐",
-        "Sad": "😢",
-        "Surprised": "😲"
-    };
+    // We reverse logs since backend `/logs` serves newest first, and line chart progresses left-to-right (oldest-to-newest)
+    const reversedLogs = [...logs].reverse();
     
-    tableBody.innerHTML = logs.map(log => {
-        const emoji = emojiMap[log.emotion] || "😐";
-        return `
-            <tr>
-                <td>${log.timestamp}</td>
-                <td>${emoji} ${log.emotion}</td>
-                <td>${(log.confidence * 100).toFixed(0)}%</td>
-            </tr>
-        `;
-    }).join('');
+    // Map timestamps to display format (HH:MM:SS)
+    const labels = reversedLogs.map(log => {
+        try {
+            // Split YYYY-MM-DD HH:MM:SS to fetch HH:MM:SS
+            return log.timestamp.split(' ')[1] || log.timestamp;
+        } catch {
+            return log.timestamp;
+        }
+    });
+    
+    // Calculate Stress Index
+    // Angry, Fearful, Sad are stress emotions (scale based on confidence)
+    // Happy, Neutral, Surprised, Disgusted are calm emotions (fixed low baseline)
+    const stressEmotions = ['Angry', 'Fearful', 'Sad'];
+    const stressData = reversedLogs.map(log => {
+        if (stressEmotions.includes(log.emotion)) {
+            return log.confidence * 100;
+        } else {
+            // Calm emotions represent low background stress level (e.g. 10%)
+            return 10;
+        }
+    });
+    
+    // Check if the latest telemetry point is in high stress (> 40%)
+    const latestLog = logs[0];
+    const isLatestStressed = latestLog && stressEmotions.includes(latestLog.emotion) && latestLog.confidence > 0.40;
+    
+    // Dynamic chart accent coloring based on current stress state
+    const dataset = telemetryChart.data.datasets[0];
+    if (isLatestStressed) {
+        dataset.borderColor = '#ff416c';
+        dataset.backgroundColor = 'rgba(255, 65, 108, 0.12)';
+        dataset.pointBackgroundColor = '#ff416c';
+    } else {
+        dataset.borderColor = '#38bdf8';
+        dataset.backgroundColor = 'rgba(56, 189, 248, 0.12)';
+        dataset.pointBackgroundColor = '#38bdf8';
+    }
+    
+    telemetryChart.data.labels = labels;
+    dataset.data = stressData;
+    telemetryChart.update('none'); // Update without full layout animation to keep performance fast
 }
 
 // Show the Guided Breathing Wellness Modal and pause capturing

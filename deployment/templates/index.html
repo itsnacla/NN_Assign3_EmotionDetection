@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Chart.js for real-time telemetry graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="glow-bg"></div>
@@ -194,28 +196,19 @@
                     </div>
                 </div>
 
-                <!-- <div class="log-history-panel">
+                <div class="log-history-panel">
                     <div class="log-header">
-                        <h3>Recent Telemetry Logs</h3>
-                        <span class="save-indicator">CSV Database Active</span>
+                        <h3>Stress & Focus Telemetry</h3>
+                        <span class="save-indicator">Live Chart</span>
                     </div>
-                    <div class="table-container">
-                        <table id="log-table">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>Emotion</th>
-                                    <th>Confidence</th>
-                                </tr>
-                            </thead>
-                            <tbody id="log-table-body">
-                                <tr>
-                                    <td colspan="3" class="empty-log">No logs recorded. Start camera to write entries.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="chart-container">
+                        <canvas id="telemetry-chart"></canvas>
                     </div>
-                </div> -->
+                    <div class="chart-legend-info">
+                        <span class="legend-calm">● Biru: Tenang & Fokus</span>
+                        <span class="legend-stress">● Merah: Mengalami Stres</span>
+                    </div>
+                </div>
 
                 <div class="card-footer">
                     <p class="footnote">Model accuracy is based on training outputs. Make sure face is well lit and directly facing the camera for best performance.</p>
