@@ -104,6 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Auto-start webcam when page opens
     startWebcam();
+    
+    // Fetch logs initially and setup periodic logs telemetry fetcher
+    fetchLogs();
+    setInterval(fetchLogs, 2500);
 });
 
 // Mode Switching (Webcam vs. Upload)
@@ -485,4 +489,49 @@ function showProcessing(show) {
     } else {
         processingInfo.classList.add('hidden');
     }
+}
+
+// Fetch recently logged events from CSV database
+async function fetchLogs() {
+    try {
+        const response = await fetch('/logs');
+        if (response.ok) {
+            const logs = await response.json();
+            renderLogsTable(logs);
+        }
+    } catch (err) {
+        console.error("Error fetching logs:", err);
+    }
+}
+
+// Render retrieved CSV database rows to the logs table in UI
+function renderLogsTable(logs) {
+    const tableBody = document.getElementById('log-table-body');
+    if (!tableBody) return;
+    
+    if (!logs || logs.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" class="empty-log">No logs recorded. Start camera to write entries.</td></tr>`;
+        return;
+    }
+    
+    const emojiMap = {
+        "Angry": "😠",
+        "Disgusted": "🤢",
+        "Fearful": "😨",
+        "Happy": "😊",
+        "Neutral": "😐",
+        "Sad": "😢",
+        "Surprised": "😲"
+    };
+    
+    tableBody.innerHTML = logs.map(log => {
+        const emoji = emojiMap[log.emotion] || "😐";
+        return `
+            <tr>
+                <td>${log.timestamp}</td>
+                <td>${emoji} ${log.emotion}</td>
+                <td>${(log.confidence * 100).toFixed(0)}%</td>
+            </tr>
+        `;
+    }).join('');
 }

@@ -2,6 +2,9 @@ import os
 import base64
 import numpy as np
 import cv2
+import csv
+import time
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
 # Prevent tensorflow warnings
@@ -22,6 +25,35 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 DEPLOYMENT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(DEPLOYMENT_DIR)
 MODEL_PATH = os.path.join(REPO_ROOT, 'src', 'models', 'model.h5')
+LOGS_DIR = os.path.join(REPO_ROOT, 'output', 'logs')
+CSV_PATH = os.path.join(LOGS_DIR, 'user_emotions.csv')
+
+# Telemetry log settings
+last_log_time = 0
+LOG_COOLDOWN_SEC = 2.0  # Log once every 2 seconds for smooth webcam updates
+
+def log_emotion_event(emotion, confidence):
+    global last_log_time
+    current_time = time.time()
+    if current_time - last_log_time < LOG_COOLDOWN_SEC:
+        return
+        
+    try:
+        os.makedirs(LOGS_DIR, exist_ok=True)
+        file_exists = os.path.exists(CSV_PATH)
+        
+        with open(CSV_PATH, mode='a', newline='') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(['timestamp', 'emotion', 'confidence'])
+            
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            writer.writerow([timestamp, emotion, f"{confidence:.4f}"])
+            last_log_time = current_time
+            print(f"Logged user emotion: {emotion} at {timestamp} with confidence {confidence:.4f}")
+    except Exception as e:
+        print(f"Error logging user emotion: {e}")
+
 
 # Emotion dictionary corresponding to the model output classes
 EMOTION_DICT = {
@@ -123,6 +155,9 @@ def predict_emotions_in_image(image_cv):
         })
 
     if dominant_face:
+        # Log all dominant user emotions continuously
+        log_emotion_event(dominant_face["emotion"], dominant_face["confidence"])
+
         return {
             "faces": faces_response,
             "dominant": dominant_face["emotion"],
@@ -193,6 +228,30 @@ def predict_frame():
     except Exception as e:
         print(f"Error processing frame: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/logs', methods=['GET'])
+def get_logs():
+    """
+    Retrieve the last 7 logged events from the CSV file.
+    """
+    logs = []
+    if os.path.exists(CSV_PATH):
+        try:
+            with open(CSV_PATH, mode='r') as f:
+                reader = csv.reader(f)
+                header = next(reader, None) # skip header
+                rows = list(reader)
+                # Take the last 7 logs and reverse to show newest first
+                for r in reversed(rows[-7:]):
+                    if len(r) == 3:
+                        logs.append({
+                            "timestamp": r[0],
+                            "emotion": r[1],
+                            "confidence": float(r[2])
+                        })
+        except Exception as e:
+            print(f"Error reading CSV logs: {e}")
+    return jsonify(logs)
 
 if __name__ == '__main__':
     # Initialize model at startup to verify and preheat TF session
