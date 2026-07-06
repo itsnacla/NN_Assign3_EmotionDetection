@@ -2,7 +2,7 @@
 let currentMode = 'webcam'; // 'webcam' or 'upload'
 let streamActive = false;
 let webcamStream = null;
-let animationFrameId = null;
+let frameIntervalId = null;
 let lastFrameTime = 0;
 const frameThrottleMs = 180; // Send frames roughly 5-6 times per second to prevent network lag
 
@@ -101,6 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
             processUpload(files[0]);
         }
     });
+
+    // Auto-start webcam when page opens
+    startWebcam();
 });
 
 // Mode Switching (Webcam vs. Upload)
@@ -197,60 +200,54 @@ function toggleStream() {
     }
 }
 
-// Webcam Frame Capture Loop (throttled)
+// Webcam Frame Capture Loop (using setInterval to continue running when tab is backgrounded)
 function startFrameLoop() {
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    if (frameIntervalId) clearInterval(frameIntervalId);
     
-    const sendFrame = async (timestamp) => {
+    frameIntervalId = setInterval(async () => {
         if (!streamActive || currentMode !== 'webcam') return;
         
-        if (timestamp - lastFrameTime >= frameThrottleMs) {
-            lastFrameTime = timestamp;
-            
-            // Draw video frame to an offscreen canvas
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = videoElement.videoWidth;
-            tempCanvas.height = videoElement.videoHeight;
-            const ctx = tempCanvas.getContext('2d');
-            
-            // Draw video to canvas (normal orientation, no mirror logic needed as overlay mirror matches)
-            ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
-            
-            // Compress and convert to base64 jpeg
-            const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.7);
-            const base64Data = dataUrl.split(',')[1];
-            
-            showProcessing(true);
-            
-            try {
-                const response = await fetch('/predict_frame', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: base64Data })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    drawFaces(webcamOverlay, data.faces, true);
-                    updateMetrics(data.dominant, data.scores);
-                }
-            } catch (err) {
-                console.error('API Frame processing error:', err);
-            } finally {
-                showProcessing(false);
-            }
-        }
+        // Draw video frame to an offscreen canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = videoElement.videoWidth;
+        tempCanvas.height = videoElement.videoHeight;
         
-        animationFrameId = requestAnimationFrame(sendFrame);
-    };
-    
-    animationFrameId = requestAnimationFrame(sendFrame);
+        // If resolution is not ready yet, skip this frame
+        if (tempCanvas.width === 0 || tempCanvas.height === 0) return;
+        
+        const ctx = tempCanvas.getContext('2d');
+        ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Compress and convert to base64 jpeg
+        const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.7);
+        const base64Data = dataUrl.split(',')[1];
+        
+        showProcessing(true);
+        
+        try {
+            const response = await fetch('/predict_frame', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: base64Data })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                drawFaces(webcamOverlay, data.faces, true);
+                updateMetrics(data.dominant, data.scores);
+            }
+        } catch (err) {
+            console.error('API Frame processing error:', err);
+        } finally {
+            showProcessing(false);
+        }
+    }, frameThrottleMs);
 }
 
 function stopFrameLoop() {
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
+    if (frameIntervalId) {
+        clearInterval(frameIntervalId);
+        frameIntervalId = null;
     }
 }
 
