@@ -10,17 +10,26 @@ const frameThrottleMs = 180; // Send frames roughly 5-6 times per second to prev
 let lastBeepTime = 0;
 const beepCooldownMs = 3000; // 3 seconds cooldown between alerts
 
-// Web Audio API Beep Synthesizer
-function playBeep(frequency = 600, duration = 0.25) {
+// Web Audio API Beep Synthesizer (Loud Alarm style)
+function playBeep(frequency = 880, duration = 0.5) {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Auto-resume if context is suspended by browser autoplay policy
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         
-        oscillator.type = 'sine';
+        // Use 'sawtooth' wave for a buzzy, prominent alarm sound
+        oscillator.type = 'sawtooth';
         oscillator.frequency.value = frequency;
         
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        // Maintain constant volume and fade out quickly only at the very end
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime + duration - 0.15);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
         
         oscillator.connect(gainNode);
@@ -323,7 +332,7 @@ function drawFaces(canvas, faces, isMirrored = false) {
         // Compute horizontal placement depending on mirrored camera view
         const drawX = isMirrored ? (canvas.width - x - w) : x;
         
-        const stressEmotions = ['Angry', 'Sad', 'Disgusted'];
+        const stressEmotions = ['Angry', 'Sad', 'Fearful'];
         const isStress = stressEmotions.includes(emotion);
         const accentColor = isStress ? '#800000' : '#38bdf8';
         const shadowColor = isStress ? 'rgba(128, 0, 0, 0.5)' : 'rgba(56, 189, 248, 0.5)';
@@ -427,13 +436,13 @@ function updateMetrics(dominant, scores) {
         }
     }
     
-    // Play a stress alert beep if dominant emotion implies stress and is highly confident
+    // Play a stress alert beep if dominant emotion implies stress (Angry, Fearful, Sad) and is > 40% confident
     const stressEmotions = ['Angry', 'Fearful', 'Sad'];
-    if (stressEmotions.includes(dominant) && scores[dominant] > 0.55) {
+    if (stressEmotions.includes(dominant) && scores[dominant] > 0.40) {
         const now = Date.now();
         if (now - lastBeepTime > beepCooldownMs) {
             lastBeepTime = now;
-            playBeep(650, 0.3); // Play a warning beep at 650Hz
+            playBeep(880, 1.2); // Play a loud buzzy warning beep (880Hz, 1.2s duration)
         }
     }
 }
