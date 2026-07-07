@@ -21,7 +21,28 @@
         <!-- Sidebar/Header Section -->
         <header class="app-header">
             <div class="logo-area">
-                <h1>Emotion <span class="accent-text">Detector</span></h1>
+                <h1><span class="accent-text">Zen</span>Study</h1>
+                {% if user_email %}
+                <div class="user-profile-dropdown">
+                    <button class="profile-trigger" id="profile-trigger" aria-label="User Profile">
+                        <span class="avatar-circle">{{ user_email[0].upper() }}</span>
+                    </button>
+                    <div class="profile-dropdown-menu" id="profile-dropdown-menu">
+                        <div class="dropdown-header">
+                            <span class="user-email-full">{{ user_email }}</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/logout" class="logout-link-item">
+                            <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Sign Out
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
             <p class="subtitle">Deep Learning Facial Emotion Expression Analytics</p>
             

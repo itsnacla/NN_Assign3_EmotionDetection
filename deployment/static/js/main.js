@@ -125,6 +125,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCloseStress) {
         btnCloseStress.addEventListener('click', closeStressModal);
     }
+
+    // Setup Profile Dropdown Toggle
+    const profileTrigger = document.getElementById('profile-trigger');
+    const profileDropdown = document.getElementById('profile-dropdown-menu');
+    if (profileTrigger && profileDropdown) {
+        profileTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+        });
+        document.addEventListener('click', (e) => {
+            if (!profileDropdown.contains(e.target) && e.target !== profileTrigger) {
+                profileDropdown.classList.remove('show');
+            }
+        });
+    }
 });
 
 // Mode Switching (Webcam vs. Upload)

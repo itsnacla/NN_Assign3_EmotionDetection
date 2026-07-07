@@ -5,7 +5,12 @@ import cv2
 import csv
 import time
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+# Load environment variables
+load_dotenv()
 
 # Prevent tensorflow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -17,6 +22,23 @@ import tensorflow as tf
 app = Flask(__name__, 
             template_folder='templates',
             static_folder='static')
+
+# Flask session config
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key-zen-study")
+
+# Initialize Supabase client
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"WARNING: Failed to initialize Supabase client: {e}")
+else:
+    print("WARNING: SUPABASE_URL and SUPABASE_KEY environment variables are missing.")
+
 
 # Set upload limits (max 10MB)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
@@ -177,11 +199,69 @@ def append_face(faces_list, face_data):
 # Routes
 @app.route('/')
 def landing():
+    if 'user' in session:
+        return redirect(url_for('dashboard'))
     return render_template('landing.html')
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('index.html')
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return render_template('index.html', user_email=session['user'].get('email'))
+
+@app.route('/login')
+def login():
+    if not supabase:
+        return "Supabase client is not configured. Please check your environment variables or .env file.", 500
+    
+    # Construct the redirect URL (callback) pointing back to this Flask server
+    redirect_url = url_for('auth_callback', _external=True)
+    try:
+        response = supabase.auth.sign_in_with_oauth(
+            {
+                "provider": "google",
+                "options": {
+                    "redirect_to": redirect_url,
+                }
+            }
+        )
+        return redirect(response.url)
+    except Exception as e:
+        print(f"Error during Google OAuth redirect: {e}")
+        return f"OAuth Redirect Failed: {str(e)}", 500
+
+@app.route('/auth/callback')
+def auth_callback():
+    code = request.args.get('code')
+    if not code:
+        return "No authorization code provided by OAuth flow.", 400
+        
+    try:
+        # Exchange the code for a session
+        res = supabase.auth.exchange_code_for_session({"auth_code": code})
+        
+        # Save user and session info into Flask session
+        session['user'] = {
+            'id': res.user.id,
+            'email': res.user.email
+        }
+        session['access_token'] = res.session.access_token
+        
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"Error exchanging authorization code: {e}")
+        return f"Authentication Session Exchange Failed: {str(e)}", 500
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    try:
+        if supabase:
+            supabase.auth.sign_out()
+    except Exception as e:
+        print(f"Error signing out from Supabase: {e}")
+    return redirect(url_for('landing'))
+
 
 @app.route('/predict', methods=['POST'])
 def predict_upload():

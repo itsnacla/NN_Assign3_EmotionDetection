@@ -11,6 +11,8 @@ env/
 env.bak/
 venv.bak/
 
+.env
+
 # Distribution / packaging
 build/
 dist/
