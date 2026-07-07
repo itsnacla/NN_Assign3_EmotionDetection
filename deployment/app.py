@@ -39,6 +39,25 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("WARNING: SUPABASE_URL and SUPABASE_KEY environment variables are missing.")
 
+def get_request_supabase():
+    """
+    Creates a request-scoped Supabase client initialized with the current user's session token.
+    This ensures all database queries respect Postgres Row-Level Security (RLS) policies.
+    """
+    if not (SUPABASE_URL and SUPABASE_KEY):
+        return None
+    try:
+        # Create a new client instance for the current request
+        client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        if 'access_token' in session:
+            refresh_token = session.get('refresh_token', '')
+            client.auth.set_session(session['access_token'], refresh_token)
+        return client
+    except Exception as e:
+        print(f"Error creating request-scoped Supabase client: {e}")
+        return None
+
+
 
 # Set upload limits (max 10MB)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
@@ -60,21 +79,57 @@ def log_emotion_event(emotion, confidence):
     if current_time - last_log_time < LOG_COOLDOWN_SEC:
         return
         
+    logged_to_supabase = False
+    req_supabase = get_request_supabase()
+    # Log status for debugging
     try:
+        session_status = f"supabase_client={req_supabase is not None}, session_user={'user' in session}, session_keys={list(session.keys()) if session else []}"
         os.makedirs(LOGS_DIR, exist_ok=True)
-        file_exists = os.path.exists(CSV_PATH)
-        
-        with open(CSV_PATH, mode='a', newline='') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(['timestamp', 'emotion', 'confidence'])
-            
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            writer.writerow([timestamp, emotion, f"{confidence:.4f}"])
+        with open(os.path.join(LOGS_DIR, 'auth_debug.log'), 'a') as debug_f:
+            debug_f.write(f"{datetime.now()}: Status check: {session_status}\n")
+    except Exception:
+        pass
+
+    # Try logging to Supabase first if a user session exists
+    if req_supabase and 'user' in session:
+        try:
+            user_data = session['user']
+            req_supabase.table("emotion_logs").insert({
+                "user_id": user_data['id'],
+                "email": user_data['email'],
+                "emotion": emotion,
+                "confidence": float(confidence)
+            }).execute()
+            print(f"Logged user emotion to Supabase for {user_data['email']}: {emotion} with confidence {confidence:.4f}")
+            logged_to_supabase = True
             last_log_time = current_time
-            print(f"Logged user emotion: {emotion} at {timestamp} with confidence {confidence:.4f}")
-    except Exception as e:
-        print(f"Error logging user emotion: {e}")
+        except Exception as e:
+            error_msg = f"Failed to log to Supabase: {e}\n"
+            print(error_msg, end='')
+            try:
+                os.makedirs(LOGS_DIR, exist_ok=True)
+                with open(os.path.join(LOGS_DIR, 'auth_debug.log'), 'a') as debug_f:
+                    debug_f.write(f"{datetime.now()}: {error_msg}")
+            except Exception:
+                pass
+            
+    # Fallback to local CSV logging if not logged to Supabase
+    if not logged_to_supabase:
+        try:
+            os.makedirs(LOGS_DIR, exist_ok=True)
+            file_exists = os.path.exists(CSV_PATH)
+            
+            with open(CSV_PATH, mode='a', newline='') as f:
+                writer = csv.writer(f)
+                if not file_exists:
+                    writer.writerow(['timestamp', 'emotion', 'confidence'])
+                
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                writer.writerow([timestamp, emotion, f"{confidence:.4f}"])
+                last_log_time = current_time
+                print(f"Logged user emotion to CSV: {emotion} at {timestamp} with confidence {confidence:.4f}")
+        except Exception as e:
+            print(f"Error logging user emotion to CSV: {e}")
 
 
 # Emotion dictionary corresponding to the model output classes
@@ -246,6 +301,7 @@ def auth_callback():
             'email': res.user.email
         }
         session['access_token'] = res.session.access_token
+        session['refresh_token'] = res.session.refresh_token
         
         return redirect(url_for('dashboard'))
     except Exception as e:
@@ -316,8 +372,42 @@ def predict_frame():
 @app.route('/logs', methods=['GET'])
 def get_logs():
     """
-    Retrieve the last 7 logged events from the CSV file.
+    Retrieve the last 7 logged events from Supabase (or CSV fallback).
     """
+    logs = []
+    req_supabase = get_request_supabase()
+    
+    # Try fetching from Supabase first if a user session exists
+    if req_supabase and 'user' in session:
+        try:
+            user_data = session['user']
+            response = req_supabase.table("emotion_logs") \
+                .select("timestamp, emotion, confidence") \
+                .eq("user_id", user_data['id']) \
+                .order("timestamp", desc=True) \
+                .limit(7) \
+                .execute()
+                
+            # Process and format timestamps for display on the front-end chart
+            for item in response.data:
+                # Timestamptz format: "2026-07-08T01:36:25+00:00"
+                # Convert to "YYYY-MM-DD HH:MM:SS" local format
+                try:
+                    dt = datetime.fromisoformat(item['timestamp'].replace('Z', '+00:00'))
+                    formatted_ts = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    formatted_ts = item['timestamp']
+                    
+                logs.append({
+                    "timestamp": formatted_ts,
+                    "emotion": item['emotion'],
+                    "confidence": float(item['confidence'])
+                })
+            return jsonify(logs)
+        except Exception as e:
+            print(f"Failed to fetch logs from Supabase: {e}. Falling back to CSV...")
+            
+    # Fallback to local CSV logging
     logs = []
     if os.path.exists(CSV_PATH):
         try:
