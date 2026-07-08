@@ -2,9 +2,9 @@
 let currentMode = 'webcam'; // 'webcam' or 'upload'
 let streamActive = false;
 let webcamStream = null;
-let frameIntervalId = null;
+let frameLoopActive = false;
 let lastFrameTime = 0;
-const frameThrottleMs = 180; // Send frames roughly 5-6 times per second to prevent network lag
+const frameThrottleMs = 100; // Target ~10 FPS for fluid face tracking
 
 // Audio beep alert settings
 let lastBeepTime = 0;
@@ -236,20 +236,36 @@ function toggleStream() {
     }
 }
 
-// Webcam Frame Capture Loop (using setInterval to continue running when tab is backgrounded)
+// Webcam Frame Capture Loop (using recursive setTimeout to prevent request queuing/bottlenecks)
 function startFrameLoop() {
-    if (frameIntervalId) clearInterval(frameIntervalId);
+    if (frameLoopActive) return;
+    frameLoopActive = true;
+    runFrameCycle();
+}
+
+function stopFrameLoop() {
+    frameLoopActive = false;
+}
+
+async function runFrameCycle() {
+    if (!frameLoopActive || !streamActive || currentMode !== 'webcam') {
+        frameLoopActive = false;
+        return;
+    }
     
-    frameIntervalId = setInterval(async () => {
-        if (!streamActive || currentMode !== 'webcam') return;
-        
-        // Draw video frame to an offscreen canvas
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = videoElement.videoWidth;
-        tempCanvas.height = videoElement.videoHeight;
-        
-        // If resolution is not ready yet, skip this frame
-        if (tempCanvas.width === 0 || tempCanvas.height === 0) return;
+    const startTime = Date.now();
+    
+    // Draw video frame to an offscreen canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = videoElement.videoWidth;
+    tempCanvas.height = videoElement.videoHeight;
+    
+    if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+        // Ensure overlay canvas dimensions match the active video stream resolution
+        if (webcamOverlay.width !== videoElement.videoWidth || webcamOverlay.height !== videoElement.videoHeight) {
+            webcamOverlay.width = videoElement.videoWidth;
+            webcamOverlay.height = videoElement.videoHeight;
+        }
         
         const ctx = tempCanvas.getContext('2d');
         ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
@@ -269,21 +285,27 @@ function startFrameLoop() {
             
             if (response.ok) {
                 const data = await response.json();
-                drawFaces(webcamOverlay, data.faces, true);
-                updateMetrics(data.dominant, data.scores);
+                
+                // Guard clause to prevent updating UI if stream was stopped or mode changed during request
+                if (frameLoopActive && streamActive && currentMode === 'webcam') {
+                    drawFaces(webcamOverlay, data.faces, true);
+                    updateMetrics(data.dominant, data.scores);
+                }
             }
         } catch (err) {
             console.error('API Frame processing error:', err);
         } finally {
             showProcessing(false);
         }
-    }, frameThrottleMs);
-}
-
-function stopFrameLoop() {
-    if (frameIntervalId) {
-        clearInterval(frameIntervalId);
-        frameIntervalId = null;
+    }
+    
+    // Schedule the next frame cycle, taking processing time into account
+    if (frameLoopActive && streamActive && currentMode === 'webcam') {
+        const elapsedTime = Date.now() - startTime;
+        const nextDelay = Math.max(0, frameThrottleMs - elapsedTime);
+        setTimeout(runFrameCycle, nextDelay);
+    } else {
+        frameLoopActive = false;
     }
 }
 
@@ -325,6 +347,9 @@ function processUpload(file) {
                 return res.json();
             })
             .then(data => {
+                // Guard clause to prevent updating UI if user switched mode during request
+                if (currentMode !== 'upload') return;
+                
                 drawFaces(uploadOverlay, data.faces, false);
                 updateMetrics(data.dominant, data.scores);
                 updateStatus('idle', 'Analysis completed');

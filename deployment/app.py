@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import csv
 import time
+import threading
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from dotenv import load_dotenv
@@ -79,57 +80,67 @@ def log_emotion_event(emotion, confidence):
     if current_time - last_log_time < LOG_COOLDOWN_SEC:
         return
         
-    logged_to_supabase = False
-    req_supabase = get_request_supabase()
+    # Mark cooldown immediately to prevent concurrent triggers in subsequent frame requests
+    last_log_time = current_time
+
+    # Retrieve required authentication and session details from Flask's request context
+    user_data = session.get('user')
+    access_token = session.get('access_token')
+    refresh_token = session.get('refresh_token')
+
     # Log status for debugging
+    session_status = f"user_in_session={'user' in session}, access_token_present={access_token is not None}"
     try:
-        session_status = f"supabase_client={req_supabase is not None}, session_user={'user' in session}, session_keys={list(session.keys()) if session else []}"
         os.makedirs(LOGS_DIR, exist_ok=True)
         with open(os.path.join(LOGS_DIR, 'auth_debug.log'), 'a') as debug_f:
             debug_f.write(f"{datetime.now()}: Status check: {session_status}\n")
     except Exception:
         pass
 
-    # Try logging to Supabase first if a user session exists
-    if req_supabase and 'user' in session:
-        try:
-            user_data = session['user']
-            req_supabase.table("emotion_logs").insert({
-                "user_id": user_data['id'],
-                "email": user_data['email'],
-                "emotion": emotion,
-                "confidence": float(confidence)
-            }).execute()
-            print(f"Logged user emotion to Supabase for {user_data['email']}: {emotion} with confidence {confidence:.4f}")
-            logged_to_supabase = True
-            last_log_time = current_time
-        except Exception as e:
-            error_msg = f"Failed to log to Supabase: {e}\n"
-            print(error_msg, end='')
+    def background_logging():
+        logged_to_supabase = False
+        if SUPABASE_URL and SUPABASE_KEY and user_data and access_token:
+            try:
+                # Create a request-scoped Supabase client for this background thread
+                client = create_client(SUPABASE_URL, SUPABASE_KEY)
+                client.auth.set_session(access_token, refresh_token or '')
+                client.table("emotion_logs").insert({
+                    "user_id": user_data['id'],
+                    "email": user_data['email'],
+                    "emotion": emotion,
+                    "confidence": float(confidence)
+                }).execute()
+                print(f"Logged user emotion to Supabase for {user_data['email']}: {emotion} with confidence {confidence:.4f}")
+                logged_to_supabase = True
+            except Exception as e:
+                error_msg = f"Failed to log to Supabase in background: {e}\n"
+                print(error_msg, end='')
+                try:
+                    os.makedirs(LOGS_DIR, exist_ok=True)
+                    with open(os.path.join(LOGS_DIR, 'auth_debug.log'), 'a') as debug_f:
+                        debug_f.write(f"{datetime.now()}: {error_msg}")
+                except Exception:
+                    pass
+                    
+        # Fallback to local CSV logging if not logged to Supabase
+        if not logged_to_supabase:
             try:
                 os.makedirs(LOGS_DIR, exist_ok=True)
-                with open(os.path.join(LOGS_DIR, 'auth_debug.log'), 'a') as debug_f:
-                    debug_f.write(f"{datetime.now()}: {error_msg}")
-            except Exception:
-                pass
-            
-    # Fallback to local CSV logging if not logged to Supabase
-    if not logged_to_supabase:
-        try:
-            os.makedirs(LOGS_DIR, exist_ok=True)
-            file_exists = os.path.exists(CSV_PATH)
-            
-            with open(CSV_PATH, mode='a', newline='') as f:
-                writer = csv.writer(f)
-                if not file_exists:
-                    writer.writerow(['timestamp', 'emotion', 'confidence'])
+                file_exists = os.path.exists(CSV_PATH)
                 
-                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                writer.writerow([timestamp, emotion, f"{confidence:.4f}"])
-                last_log_time = current_time
-                print(f"Logged user emotion to CSV: {emotion} at {timestamp} with confidence {confidence:.4f}")
-        except Exception as e:
-            print(f"Error logging user emotion to CSV: {e}")
+                with open(CSV_PATH, mode='a', newline='') as f:
+                    writer = csv.writer(f)
+                    if not file_exists:
+                        writer.writerow(['timestamp', 'emotion', 'confidence'])
+                    
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    writer.writerow([timestamp, emotion, f"{confidence:.4f}"])
+                    print(f"Logged user emotion to CSV: {emotion} at {timestamp} with confidence {confidence:.4f}")
+            except Exception as e:
+                print(f"Error logging user emotion to CSV: {e}")
+
+    # Launch daemon background thread
+    threading.Thread(target=background_logging, daemon=True).start()
 
 
 # Emotion dictionary corresponding to the model output classes
@@ -181,7 +192,7 @@ def predict_emotions_in_image(image_cv):
     gray = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
     
     # Detect faces
-    faces_detected = cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+    faces_detected = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
     
     faces_list = []
     dominant_face = None
