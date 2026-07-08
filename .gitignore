@@ -52,7 +52,6 @@ data/train/
 data/raw/
 
 # Generated model/output artifacts
-models/
 !src/models/model.h5
 output/
 plot.png
