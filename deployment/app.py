@@ -6,9 +6,10 @@ import csv
 import time
 import threading
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, has_request_context
 from dotenv import load_dotenv
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
+from supabase_auth import SyncSupportedStorage
 
 # Load environment variables
 load_dotenv()
@@ -27,6 +28,22 @@ app = Flask(__name__,
 # Flask session config
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key-zen-study")
 
+class FlaskSessionStorage(SyncSupportedStorage):
+    def get_item(self, key: str) -> str or None:
+        if has_request_context():
+            return session.get(key)
+        return None
+
+    def set_item(self, key: str, value: str) -> None:
+        if has_request_context():
+            session[key] = value
+            session.modified = True
+
+    def remove_item(self, key: str) -> None:
+        if has_request_context():
+            session.pop(key, None)
+            session.modified = True
+
 # Initialize Supabase client
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -34,7 +51,11 @@ supabase = None
 
 if SUPABASE_URL and SUPABASE_KEY:
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        supabase = create_client(
+            SUPABASE_URL, 
+            SUPABASE_KEY,
+            options=ClientOptions(storage=FlaskSessionStorage())
+        )
     except Exception as e:
         print(f"WARNING: Failed to initialize Supabase client: {e}")
 else:
@@ -287,7 +308,11 @@ def login():
         return "Supabase client is not configured. Please check your environment variables or .env file.", 500
     
     # Construct the redirect URL (callback) pointing back to this Flask server
-    redirect_url = url_for('auth_callback', _external=True)
+    # Prefer REDIRECT_URL from environment variables, fallback to dynamic request URL
+    redirect_url = os.environ.get("REDIRECT_URL")
+    if not redirect_url:
+        redirect_url = url_for('auth_callback', _external=True)
+        
     try:
         response = supabase.auth.sign_in_with_oauth(
             {
@@ -302,14 +327,17 @@ def login():
         print(f"Error during Google OAuth redirect: {e}")
         return f"OAuth Redirect Failed: {str(e)}", 500
 
-@app.route('/auth/callback')
+@app.route("/auth/callback")
 def auth_callback():
-    code = request.args.get('code')
+    code = request.args.get("code")
+
+    print("CALLBACK CODE:", code)
+
     if not code:
         return "No authorization code provided by OAuth flow.", 400
-        
+
     try:
-        # Exchange the code for a session
+        # Exchange the code for a session (retrieves code_verifier from Flask session storage)
         res = supabase.auth.exchange_code_for_session({"auth_code": code})
         
         # Save user and session info into Flask session
@@ -319,6 +347,7 @@ def auth_callback():
         }
         session['access_token'] = res.session.access_token
         session['refresh_token'] = res.session.refresh_token
+        session.modified = True
         
         return redirect(url_for('dashboard'))
     except Exception as e:
