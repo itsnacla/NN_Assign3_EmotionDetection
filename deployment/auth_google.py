@@ -19,7 +19,7 @@ def get_google_auth_url():
     Generate the OAuth authentication URL for Google provider.
     After successful login, the user will be redirected to the /dashboard endpoint.
     """
-    redirect_url = os.environ.get("REDIRECT_URL", "http://127.0.0.1:5000/auth/callback")
+    redirect_url = os.environ.get("REDIRECT_URL", "https://zenstudy.up.railway.app/auth/callback")
     print("REDIRECT URL USED:", redirect_url)
     
     response = supabase.auth.sign_in_with_oauth(
