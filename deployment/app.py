@@ -164,6 +164,12 @@ def get_face_cascade():
         # Load OpenCV Haar cascade from cv2's internal data directory
         cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
         if not os.path.exists(cascade_path):
+            # Fallback to local repository assets directory
+            deployment_dir = os.path.dirname(os.path.abspath(__file__))
+            repo_root = os.path.dirname(deployment_dir)
+            cascade_path = os.path.join(repo_root, 'assets', 'haarcascade_frontalface_default.xml')
+            
+        if not os.path.exists(cascade_path):
             raise FileNotFoundError(f"Haar Cascade xml not found at {cascade_path}")
         face_cascade = cv2.CascadeClassifier(cascade_path)
     return face_cascade
@@ -445,9 +451,11 @@ if __name__ == '__main__':
         get_model()
         print("Pre-heating face cascade classifier...")
         get_face_cascade()
-        print("Initialization successful. Starting server on http://127.0.0.1:5000")
+        print("Initialization successful.")
     except Exception as ex:
         print(f"WARNING: Startup loading failed: {ex}")
         print("Server will start but might fail during predictions if dependencies are missing.")
         
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting server on http://0.0.0.0:{port}")
+    app.run(host='0.0.0.0', port=port, debug=True)

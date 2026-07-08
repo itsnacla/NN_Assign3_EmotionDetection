@@ -181,7 +181,11 @@ elif mode == "display":
     emotion_dict = {0: "Angry", 1: "Disgusted", 2: "Fearful", 3: "Happy", 4: "Neutral", 5: "Sad", 6: "Surprised"}
 
     # Find haar cascade to draw bounding box around face
-    xml_path = os.path.join(os.path.dirname(__file__), 'haarcascade_frontalface_default.xml')
+    src_dir = os.path.dirname(__file__)
+    repo_root = os.path.dirname(src_dir)
+    xml_path = os.path.join(repo_root, 'assets', 'haarcascade_frontalface_default.xml')
+    if not os.path.exists(xml_path):
+        xml_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
     facecasc = cv2.CascadeClassifier(xml_path)
 
     # start the webcam feed
