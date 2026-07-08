@@ -22,13 +22,13 @@ def get_google_auth_url():
     # Replace 'http://127.0.0.1:5000' with your production URL when deploying.
     # The redirect URL must be whitelisted in your Supabase Dashboard under:
     # Authentication -> URL Configuration -> Redirect URLs
-    redirect_url = os.environ.get("REDIRECT_URL", "http://127.0.0.1:5000/dashboard")
+    redirect_url = os.environ.get("REDIRECT_URL", "https://zenstudy.up.railway.app/auth/callback")
     
     response = supabase.auth.sign_in_with_oauth(
         {
             "provider": "google",
             "options": {
-                "redirect_to": redirect_url,
+                "redirect_to": "https://zenstudy.up.railway.app/auth/callback",
             }
         }
     )
