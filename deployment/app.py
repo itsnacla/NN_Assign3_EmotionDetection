@@ -20,10 +20,15 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 import tensorflow as tf
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 # Define Flask application
 app = Flask(__name__, 
             template_folder='templates',
             static_folder='static')
+
+# Trust headers sent by reverse proxies (like Railway) to generate correct HTTPS redirect URLs
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Flask session config
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key-zen-study")
@@ -305,27 +310,23 @@ def dashboard():
 @app.route('/login')
 def login():
     if not supabase:
-        return "Supabase client is not configured. Please check your environment variables or .env file.", 500
-    
-    # Construct the redirect URL (callback) pointing back to this Flask server
-    # Prefer REDIRECT_URL from environment variables, fallback to dynamic request URL
-    redirect_url = os.environ.get("REDIRECT_URL")
-    if not redirect_url:
-        redirect_url = url_for('auth_callback', _external=True)
-        
+        return "Supabase client is not configured.", 500
+
     try:
         response = supabase.auth.sign_in_with_oauth(
             {
                 "provider": "google",
                 "options": {
-                    "redirect_to": redirect_url,
+                    "redirect_to": url_for('auth_callback', _external=True)
                 }
             }
         )
+
         return redirect(response.url)
+
     except Exception as e:
-        print(f"Error during Google OAuth redirect: {e}")
-        return f"OAuth Redirect Failed: {str(e)}", 500
+        print(f"OAuth error: {e}")
+        return str(e), 500
 
 @app.route("/auth/callback")
 def auth_callback():
