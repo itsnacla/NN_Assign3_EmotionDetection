@@ -198,6 +198,12 @@ async function startWebcam() {
             webcamOverlay.width = videoElement.videoWidth;
             webcamOverlay.height = videoElement.videoHeight;
             
+            // Adjust camera block size to match the webcam's native aspect ratio
+            const container = videoElement.closest('.media-container');
+            if (container && videoElement.videoWidth && videoElement.videoHeight) {
+                container.style.aspectRatio = `${videoElement.videoWidth} / ${videoElement.videoHeight}`;
+            }
+            
             cameraPrompt.classList.add('hidden');
             btnToggleStream.classList.remove('hidden');
             btnToggleStream.textContent = 'Stop Stream';
@@ -220,6 +226,13 @@ function stopWebcam() {
         webcamStream = null;
     }
     videoElement.srcObject = null;
+    
+    // Reset aspect ratio to default
+    const container = videoElement.closest('.media-container');
+    if (container) {
+        container.style.aspectRatio = '';
+    }
+    
     cameraPrompt.classList.remove('hidden');
     btnToggleStream.classList.add('hidden');
     streamActive = false;
@@ -552,9 +565,9 @@ function updateStatus(status, text) {
 
 function showProcessing(show) {
     if (show) {
-        processingInfo.classList.remove('hidden');
+        processingInfo.classList.remove('invisible');
     } else {
-        processingInfo.classList.add('hidden');
+        processingInfo.classList.add('invisible');
     }
 }
 

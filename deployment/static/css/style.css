@@ -207,6 +207,12 @@ body {
     align-items: center;
     gap: 8px;
     color: var(--text-muted);
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.invisible {
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 .hidden {
@@ -230,13 +236,13 @@ body {
 /* Main Dashboard Workspace Grid */
 .workspace {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: 30px;
 }
 
 @media (max-width: 900px) {
     .workspace {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -256,6 +262,8 @@ body {
     flex-direction: column;
     gap: 20px;
     height: 100%;
+    width: 100%;
+    min-width: 0;
 }
 
 .workspace-panel.active {
@@ -267,6 +275,7 @@ body {
     position: relative;
     background: #000;
     width: 100%;
+    max-width: 100%;
     aspect-ratio: 4/3;
     border-radius: 14px;
     overflow: hidden;
@@ -274,6 +283,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
 
 #webcam-stream {
@@ -1006,6 +1016,239 @@ body {
     width: 16px;
     height: 16px;
 }
+
+/* Responsive Media Queries for Mobile Devices */
+@media (max-width: 600px) {
+    body {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .dashboard-container {
+        padding: 12px;
+        border-radius: 16px;
+        gap: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .app-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding-bottom: 12px;
+    }
+
+    .logo-area h1 {
+        font-size: 22px;
+    }
+
+    .subtitle {
+        font-size: 12px;
+        text-align: center;
+        margin-top: 2px;
+    }
+
+    .mode-selector {
+        width: 100%;
+        display: flex;
+    }
+
+    .mode-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 12px;
+        gap: 6px;
+    }
+
+    .btn-icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    .status-panel {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        gap: 6px;
+    }
+
+    .status-indicator {
+        width: 100%;
+        justify-content: center;
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    .processing-info {
+        font-size: 11px;
+    }
+
+    .workspace {
+        gap: 16px;
+    }
+
+    .preview-card, .analytics-card {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .analytics-header h2 {
+        font-size: 16px;
+    }
+
+    .emotions-distribution {
+        gap: 10px;
+    }
+
+    .emotion-metric-row {
+        gap: 2px;
+    }
+
+    .metric-label {
+        font-size: 12px;
+    }
+
+    .chart-container {
+        height: 140px;
+    }
+
+    .chart-legend-info {
+        font-size: 9px;
+        flex-direction: column;
+        gap: 2px;
+        align-items: center;
+    }
+
+    /* Webcam Prompt Mobile Adjustments */
+    .prompt-icon {
+        font-size: 32px;
+        margin-bottom: 2px;
+    }
+
+    .prompt-content {
+        gap: 8px;
+        max-width: 250px;
+    }
+
+    .prompt-content h3 {
+        font-size: 15px;
+    }
+
+    .prompt-content p {
+        font-size: 11px;
+    }
+
+    .action-btn {
+        font-size: 13px;
+        padding: 10px 18px;
+        margin-top: 5px;
+    }
+
+    /* Landing Page Mobile Adjustments */
+    .landing-container {
+        padding: 16px;
+        gap: 16px;
+        border-radius: 16px;
+    }
+
+    .landing-header h2 {
+        font-size: 18px;
+        margin: 8px 0 4px;
+    }
+
+    .landing-subtitle {
+        font-size: 12.5px;
+    }
+
+    .features-grid {
+        gap: 10px;
+    }
+
+    .feature-card {
+        padding: 12px;
+    }
+
+    .feature-icon {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
+
+    .feature-card h3 {
+        font-size: 14px;
+    }
+
+    .feature-card p {
+        font-size: 11px;
+    }
+
+    .landing-cta {
+        width: 100%;
+        padding: 10px 24px;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    /* Stress Modal Mobile Adjustments */
+    .stress-modal-card {
+        padding: 16px;
+        gap: 12px;
+        border-radius: 16px;
+    }
+
+    .stress-modal-card h2 {
+        font-size: 17px;
+    }
+
+    .modal-desc {
+        font-size: 12px;
+    }
+
+    .breathing-ring-outer {
+        width: 90px;
+        height: 90px;
+    }
+
+    .breathing-ring-inner {
+        width: 45px;
+        height: 45px;
+    }
+
+    .breathing-ring-inner.expand {
+        width: 76px;
+        height: 76px;
+    }
+
+    .breathing-ring-inner.shrink {
+        width: 25px;
+        height: 25px;
+    }
+
+    .breathing-label {
+        font-size: 14px;
+    }
+
+    .wellness-tips {
+        padding: 8px;
+    }
+
+    .wellness-tips h4 {
+        font-size: 11px;
+        margin-bottom: 4px;
+    }
+
+    .wellness-tips ul {
+        font-size: 10px;
+        gap: 2px;
+    }
+}
+
 
 
 

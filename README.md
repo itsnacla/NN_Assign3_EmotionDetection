@@ -1,6 +1,13 @@
 # Sistem Deteksi Emosi & Stres (Emotion & Stress Detection System)
 
+[![Deployment Status](https://img.shields.io/badge/Status-Live-success?style=for-the-badge&logo=railway)](https://zenstudy.up.railway.app/)
+[![Live Demo](https://img.shields.io/badge/Demo-zenstudy.up.railway.app-blue?style=for-the-badge)](https://zenstudy.up.railway.app/)
+
 Proyek ini merupakan sistem deteksi emosi dan klasifikasi tingkat stres berbasis kecerdasan buatan menggunakan **Convolutional Neural Network (CNN)** dengan pustaka TensorFlow/Keras. Sistem dapat mengklasifikasikan wajah ke dalam 7 kategori emosi dasar, memetakan emosi tersebut ke dalam kategori biner (**Stres** vs. **Non-Stres**), serta diintegrasikan ke dalam aplikasi web interaktif berbasis Flask yang terhubung dengan Supabase untuk autentikasi dan pencatatan riwayat deteksi.
+
+> [!IMPORTANT]
+> **Aplikasi Live**: Aplikasi web ini telah dideploy secara live dan dapat diakses langsung melalui:
+> 👉 **[https://zenstudy.up.railway.app/](https://zenstudy.up.railway.app/)**
 
 ---
 
@@ -109,7 +116,7 @@ Buka berkas `.env` dan masukkan kredensial Supabase Anda:
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_KEY=your-supabase-anon-public-key
 FLASK_SECRET_KEY=generate-a-secure-secret-key-here
-REDIRECT_URL=http://127.0.0.1:5000/dashboard
+REDIRECT_URL=http://127.0.0.1:5000/auth/callback
 ```
 
 ### 4. Setup Database Supabase
@@ -140,7 +147,9 @@ for select
 using (auth.uid() = user_id);
 ```
 
-Jangan lupa aktifkan Google OAuth di menu **Authentication -> Providers -> Google** pada dashboard Supabase dan isi Client ID & Client Secret dari Google Cloud Console Anda. Tambahkan `http://127.0.0.1:5000/dashboard` ke dalam **Redirect URLs** di setelan otentikasi Supabase.
+Jangan lupa aktifkan Google OAuth di menu **Authentication -> Providers -> Google** pada dashboard Supabase dan isi Client ID & Client Secret dari Google Cloud Console Anda. Tambahkan URL pengalihan (Redirect URLs) berikut di setelan otentikasi Supabase:
+* Lokasi lokal: `http://127.0.0.1:5000/auth/callback`
+* Lokasi produksi: `https://zenstudy.up.railway.app/auth/callback`
 
 ---
 
@@ -185,6 +194,29 @@ Untuk menjalankan aplikasi web Flask interaktif:
 python deployment/app.py
 ```
 Buka browser Anda dan akses alamat `http://127.0.0.1:5000`. Anda dapat login menggunakan akun Google, memindai wajah via kamera web di halaman web secara real-time, mengunggah file foto statis, dan melihat grafik riwayat emosi yang sinkron ke database.
+
+---
+
+## ☁️ Deployment Produksi (Railway)
+
+Aplikasi web Flask ini dikonfigurasi untuk berjalan di platform cloud **Railway** dengan tautan langsung berikut:
+👉 **[https://zenstudy.up.railway.app/](https://zenstudy.up.railway.app/)**
+
+### 1. Konfigurasi Deployment di Railway
+Proyek ini siap dideploy menggunakan file konfigurasi yang disediakan:
+* **[Procfile](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/Procfile)**: Mendefinisikan perintah server web produksi dengan Gunicorn: `web: gunicorn wsgi:app`.
+* **[wsgi.py](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/wsgi.py)**: Berfungsi sebagai entrypoint server produksi untuk mengimpor aplikasi Flask.
+* **Proxy Fix**: Menggunakan `ProxyFix` dari `werkzeug.middleware.proxy_fix` pada [app.py](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/deployment/app.py) untuk memproses header proxy (`X-Forwarded-Proto`, `X-Forwarded-For`, `X-Forwarded-Host`) secara aman agar Flask dapat menghasilkan URL redirect HTTPS callback OAuth secara akurat.
+
+### 2. Variabel Lingkungan di Railway (Variables)
+Pada panel kontrol proyek di dashboard Railway, tambahkan variabel lingkungan berikut:
+| Nama Variabel | Deskripsi / Contoh Nilai |
+| :--- | :--- |
+| `SUPABASE_URL` | URL endpoint proyek Supabase Anda (`https://xxx.supabase.co`) |
+| `SUPABASE_KEY` | Anon public API key milik Supabase Anda |
+| `FLASK_SECRET_KEY` | Kunci acak aman untuk mengenkripsi cookie session Flask |
+| `REDIRECT_URL` | Diarahkan ke callback produksi: `https://zenstudy.up.railway.app/auth/callback` |
+| `PORT` | *Opsional* (Railway akan menyediakan port ini secara otomatis, default: `5000`) |
 
 ---
 
