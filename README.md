@@ -1,117 +1,117 @@
-# Sistem Deteksi Emosi & Stres (Emotion & Stress Detection System)
+# Zen Study: Emotion & Stress Detection System
 
 [![Deployment Status](https://img.shields.io/badge/Status-Live-success?style=for-the-badge&logo=railway)](https://zenstudy.up.railway.app/)
 [![Live Demo](https://img.shields.io/badge/Demo-zenstudy.up.railway.app-blue?style=for-the-badge)](https://zenstudy.up.railway.app/)
 
-Proyek ini merupakan sistem deteksi emosi dan klasifikasi tingkat stres berbasis kecerdasan buatan menggunakan **Convolutional Neural Network (CNN)** dengan pustaka TensorFlow/Keras. Sistem dapat mengklasifikasikan wajah ke dalam 7 kategori emosi dasar, memetakan emosi tersebut ke dalam kategori biner (**Stres** vs. **Non-Stres**), serta diintegrasikan ke dalam aplikasi web interaktif berbasis Flask yang terhubung dengan Supabase untuk autentikasi dan pencatatan riwayat deteksi.
+This project is an AI-powered emotion detection and stress level classification system using a custom **Convolutional Neural Network (CNN)** built with TensorFlow/Keras. The system classifies facial expressions into 7 basic emotions, maps them to a binary category (**Stress** vs. **Non-Stress**), and integrates them into an interactive Flask web application connected with Supabase for user authentication and historical log tracking.
 
 > [!IMPORTANT]
-> **Aplikasi Live**: Aplikasi web ini telah dideploy secara live dan dapat diakses langsung melalui:
+> **Live Application**: This web application is deployed live and can be accessed at:
 > 👉 **[https://zenstudy.up.railway.app/](https://zenstudy.up.railway.app/)**
 
 ---
 
-## 🚀 Fitur Utama
+## 🚀 Key Features
 
-1. **Preprocessing Data Otomatis**: Mengekstrak data pixel mentah dari berkas `fer2013.csv` dan mengonversinya menjadi kumpulan gambar `.png` terstruktur sesuai dengan kategori emosinya.
-2. **Model CNN Kustom**: Model Deep Learning yang dirancang menggunakan arsitektur CNN berlapis (Conv2D, MaxPooling2D, Dropout, Flatten, dan Dense) untuk klasifikasi 7 emosi wajah.
-3. **Deteksi Real-Time**: Deteksi emosi wajah langsung menggunakan umpan kamera (webcam) lokal dengan bantuan OpenCV dan Haar Cascade Classifier.
-4. **Metrik & Evaluasi Komprehensif**:
-   - Evaluasi klasifikasi emosi 7-kelas (Confusion Matrix).
-   - Klasifikasi biner Stres vs. Non-Stress (Stress: *Angry, Fearful, Sad*; Non-Stress: *Disgusted, Happy, Neutral, Surprised*).
-   - Visualisasi kurva ROC (Receiver Operating Characteristic) beserta nilai AUC (Area Under Curve).
-5. **Deployment Aplikasi Web**:
-   - Antarmuka pengguna (dashboard) interaktif berbasis web (Flask, HTML, CSS, JavaScript).
-   - Autentikasi Google OAuth via Supabase Auth.
-   - Sinkronisasi telemetri logging emosi ke database Supabase, dengan *fallback* otomatis ke berkas CSV lokal (`user_emotions.csv`) apabila koneksi database atau sesi pengguna tidak aktif.
-   - Grafik riwayat emosi pengguna secara dinamis di dashboard.
+1. **Automated Data Preprocessing**: Extracts raw pixel data from `fer2013.csv` and converts them into structured `.png` image sets categorized by emotion label.
+2. **Custom CNN Model**: A Deep Learning model designed using a layered CNN architecture (Conv2D, MaxPooling2D, Dropout, Flatten, and Dense) for 7-class facial emotion classification.
+3. **Real-Time Detection**: Real-time facial emotion detection via local webcam feeds using OpenCV and Haar Cascade Classifier.
+4. **Comprehensive Metrics & Evaluation**:
+   - Evaluation of 7-class emotion classification (Confusion Matrix).
+   - Binary classification metrics for Stress vs. Non-Stress (Stress: *Angry, Fearful, Sad*; Non-Stress: *Disgusted, Happy, Neutral, Surprised*).
+   - ROC (Receiver Operating Characteristic) curve visualization with AUC (Area Under Curve) scores.
+5. **Web Application Deployment**:
+   - Interactive user dashboard powered by Flask, HTML, CSS, and JavaScript.
+   - Google OAuth integration via Supabase Auth.
+   - Emotion telemetry logging synchronized to Supabase Database, with an automatic fallback to a local CSV file (`user_emotions.csv`) if the database is unreachable or the user session is inactive.
+   - Real-time user emotion history chart rendered dynamically on the dashboard.
 
 ---
 
-## 📂 Struktur Proyek
+## 📂 Project Structure
 
-Berikut adalah struktur folder dan berkas yang menyusun proyek ini:
+Below is the folder and file structure of the project:
 
 ```text
 Emotion-detection/
-├── .env                  # Berkas konfigurasi variabel lingkungan (Supabase & Flask)
-├── .env.example          # Template konfigurasi variabel lingkungan
-├── .gitignore            # Daftar berkas dan folder yang diabaikan oleh Git
-├── requirements.txt      # Berkas dependensi Python yang dibutuhkan
+├── .env                  # Environment variables configuration file (Supabase & Flask)
+├── .env.example          # Environment variables configuration template
+├── .gitignore            # Git ignore list
+├── requirements.txt      # Required Python dependencies list
 │
-├── assets/               # Folder penyimpanan berkas aset statis
-│   └── haarcascade_frontalface_default.xml  # Model Haar Cascade untuk deteksi wajah
+├── assets/               # Static assets storage directory
+│   └── haarcascade_frontalface_default.xml  # Haar Cascade model for face detection
 │
-├── data/                 # Berkas dataset (diabaikan oleh git)
-│   ├── raw/              # Tempat menaruh dataset mentah 'fer2013.csv'
-│   ├── train/            # Dataset gambar latihan (.png) yang diekstrak per emosi
-│   └── test/             # Dataset gambar uji (.png) yang diekstrak per emosi
+├── data/                 # Dataset directory (ignored by Git)
+│   ├── raw/              # Raw dataset directory (for 'fer2013.csv')
+│   ├── train/            # Extracted training image set (.png) categorized by emotion
+│   └── test/             # Extracted test image set (.png) categorized by emotion
 │
-├── deployment/           # Kode aplikasi web Flask
-│   ├── app.py            # Backend server Flask utama
-│   ├── auth_google.py    # Integrasi modul autentikasi Google OAuth Supabase
-│   ├── static/           # Berkas statis web (CSS & JS)
+├── deployment/           # Flask web application code
+│   ├── app.py            # Main Flask server backend
+│   ├── auth_google.py    # Google OAuth Supabase authentication module
+│   ├── static/           # Web static assets (CSS & JS)
 │   │   ├── css/
-│   │   │   └── style.css # Gaya visual dashboard web
+│   │   │   └── style.css # Dashboard CSS stylesheet
 │   │   └── js/
-│   │       └── main.js   # Logika kamera, pemanggilan API, dan render grafik
-│   └── templates/        # Template halaman web HTML
-│       ├── index.html    # Halaman dashboard utama
-│       └── landing.html  # Halaman login/landing page
+│   │       └── main.js   # Camera logic, API requests, and chart rendering
+│   └── templates/        # HTML page templates
+│       ├── index.html    # Main dashboard page
+│       └── landing.html  # Authentication/landing page
 │
-├── output/               # Output hasil pelatihan & evaluasi (diabaikan oleh git)
-│   ├── logs/             # Berkas log lokal (user_emotions.csv & auth_debug.log)
-│   └── plots/            # Gambar visualisasi grafik akurasi, confusion matrix, & ROC curve
+├── output/               # Training & evaluation output directory (ignored by Git)
+│   ├── logs/             # Local log files (user_emotions.csv & auth_debug.log)
+│   └── plots/            # Accuracy charts, confusion matrices, and ROC curves
 │
-└── src/                  # Kode sumber Python untuk pemrosesan data & model
-    ├── evaluate.py       # Script evaluasi performa model di data uji
-    ├── train.py          # Script utama untuk melatih model & mendeteksi langsung via webcam
-    ├── models/           # Folder penyimpanan file model terlatih
-    │   └── model.h5      # Berkas bobot model CNN (.h5) yang disimpan setelah training
+└── src/                  # Python source code for data processing and modeling
+    ├── evaluate.py       # Evaluation script for the trained model on test data
+    ├── train.py          # Main script to train the model or display live webcam classifications
+    ├── models/           # Trained model storage directory
+    │   └── model.h5      # Trained CNN model weights file (.h5)
     └── preprocessing/
-        └── dataset_prepare.py  # Script untuk mengekstrak CSV menjadi gambar PNG
+        └── dataset_prepare.py  # Script to extract CSV entries to PNG images
 ```
 
 ---
 
-## 🛠️ Panduan Instalasi & Setup
+## 🛠️ Installation & Setup Guide
 
-Ikuti langkah-langkah berikut untuk memasang proyek ini di komputer lokal Anda:
+Follow these steps to set up this project on your local machine:
 
-### 1. Prasyarat Sistem
-* Python 3.8 hingga 3.11.
-* Webcam aktif (untuk fitur deteksi langsung & aplikasi web).
-* Koneksi internet untuk integrasi database Supabase.
+### 1. Prerequisites
+* Python 3.8 to 3.11.
+* An active webcam (for live detection and web app camera telemetry).
+* An internet connection for Supabase database integration.
 
-### 2. Pemasangan Dependensi
-Buka terminal/command prompt (disarankan menggunakan PowerShell di Windows atau Bash di Unix) lalu jalankan perintah berikut:
+### 2. Dependency Installation
+Open a terminal/command prompt (PowerShell on Windows or Bash on macOS/Linux is recommended) and run the following commands:
 
 ```powershell
-# 1. Masuk ke direktori proyek
+# 1. Navigate to the project directory
 cd "e:\8th Sem UUM\Neural Network\Assignment03\Emotion-detection"
 
-# 2. Buat Virtual Environment baru
+# 2. Create a new Virtual Environment
 python -m venv .venv
 
-# 3. Aktifkan Virtual Environment
-# Di Windows (PowerShell):
+# 3. Activate the Virtual Environment
+# On Windows (PowerShell):
 .\.venv\Scripts\Activate.ps1
-# Di Linux/macOS:
+# On Linux/macOS:
 source .venv/bin/activate
 
-# 4. Perbarui pip dan pasang semua dependensi
+# 4. Upgrade pip and install dependencies
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Konfigurasi Variabel Lingkungan (`.env`)
-Salin berkas `.env.example` menjadi `.env`:
+### 3. Environment Variables Configuration (`.env`)
+Copy the `.env.example` file to `.env`:
 
 ```powershell
 copy .env.example .env
 ```
 
-Buka berkas `.env` dan masukkan kredensial Supabase Anda:
+Open `.env` and fill in your Supabase credentials:
 ```ini
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_KEY=your-supabase-anon-public-key
@@ -119,8 +119,8 @@ FLASK_SECRET_KEY=generate-a-secure-secret-key-here
 REDIRECT_URL=http://127.0.0.1:5000/auth/callback
 ```
 
-### 4. Setup Database Supabase
-Agar fitur sinkronisasi log di web dashboard berjalan dengan lancar, buatlah tabel baru di proyek Supabase Anda dengan nama `emotion_logs` menggunakan query SQL berikut di editor SQL Supabase:
+### 4. Supabase Database Setup
+To enable telemetry synchronization to the database, create a new table named `emotion_logs` in your Supabase project using the following SQL query in the Supabase SQL Editor:
 
 ```sql
 create table public.emotion_logs (
@@ -132,10 +132,10 @@ create table public.emotion_logs (
   confidence double precision not null
 );
 
--- Mengizinkan Row Level Security (RLS)
+-- Enable Row Level Security (RLS)
 alter table public.emotion_logs enable row level security;
 
--- Buat Policy agar user hanya bisa membaca dan memasukkan log milik mereka sendiri
+-- Create policies to restrict users to their own logs
 create policy "Allow user insert own logs" 
 on public.emotion_logs 
 for insert 
@@ -147,83 +147,83 @@ for select
 using (auth.uid() = user_id);
 ```
 
-Jangan lupa aktifkan Google OAuth di menu **Authentication -> Providers -> Google** pada dashboard Supabase dan isi Client ID & Client Secret dari Google Cloud Console Anda. Tambahkan URL pengalihan (Redirect URLs) berikut di setelan otentikasi Supabase:
-* Lokasi lokal: `http://127.0.0.1:5000/auth/callback`
-* Lokasi produksi: `https://zenstudy.up.railway.app/auth/callback`
+Make sure to enable the Google OAuth provider under **Authentication -> Providers -> Google** in your Supabase dashboard and fill in the Client ID and Client Secret from your Google Cloud Console. Add the following Redirect URLs in your Supabase authentication configuration:
+* Local environment: `http://127.0.0.1:5000/auth/callback`
+* Production environment: `https://zenstudy.up.railway.app/auth/callback`
 
 ---
 
-## 🏃 Cara Menjalankan Aplikasi
+## 🏃 Running the Application
 
-### Langkah 1: Ekstraksi Dataset
-Pastikan Anda sudah meletakkan file dataset `fer2013.csv` di dalam folder `data/raw/`. Jalankan perintah berikut untuk mengekstrak berkas CSV menjadi sekumpulan gambar PNG:
+### Step 1: Dataset Extraction
+Ensure that your raw `fer2013.csv` dataset is placed inside the `data/raw/` directory. Run the following command to extract the CSV records into PNG images:
 
 ```bash
 python src/preprocessing/dataset_prepare.py
 ```
-*Proses ini akan menghasilkan folder baru berisi gambar-gambar berukuran 48x48 piksel di `data/train/` dan `data/test/`.*
+*This will generate folders containing categorized 48x48 pixel images under `data/train/` and `data/test/`.*
 
-### Langkah 2: Pelatihan Model (Training)
-Untuk melatih model CNN dari awal menggunakan data yang sudah diekstrak:
+### Step 2: Model Training
+To train the CNN model from scratch using the extracted images:
 
 ```bash
 python src/train.py --mode train
 ```
-*Setelah selesai, berkas model terlatih akan disimpan di `src/models/model.h5` dan grafik akurasi/loss akan disimpan di folder `output/plots/`.*
+*Once completed, the trained model weights will be saved to `src/models/model.h5` and accuracy/loss curves will be exported to `output/plots/`.*
 
-### Langkah 3: Deteksi Langsung via Webcam (Desktop App)
-Anda bisa langsung mencoba kemampuan klasifikasi model menggunakan webcam komputer dengan perintah:
+### Step 3: Live Webcam Detection (Desktop App)
+You can run a local desktop session to test the model's classification capability in real-time using your computer's webcam:
 
 ```bash
 python src/train.py --mode display
 ```
-*Tekan tombol `q` pada keyboard untuk menutup jendela kamera.*
+*Press the `q` key on your keyboard to close the webcam window.*
 
-### Langkah 4: Evaluasi Model
-Jalankan evaluasi untuk menghitung performa deteksi emosi 7-kelas dan analisis tingkat stres (stres vs non-stres):
+### Step 4: Model Evaluation
+Run the evaluation pipeline to compute metric summaries for both 7-class emotion detection and binary stress classification:
 
 ```bash
 python src/evaluate.py
 ```
-*Hasil evaluasi berupa confusion matrix dan kurva ROC akan disimpan di folder `output/plots/`, dan berkas ringkasan metrik disimpan di `output/plots/evaluation_metrics_summary.txt`.*
+*Evaluation outputs (confusion matrix, ROC curves) will be saved to `output/plots/`, and a textual summary of metrics will be written to `output/plots/evaluation_metrics_summary.txt`.*
 
-### Langkah 5: Jalankan Server Aplikasi Web
-Untuk menjalankan aplikasi web Flask interaktif:
+### Step 5: Start the Web Application Server
+To start the interactive local Flask web application:
 
 ```bash
 python deployment/app.py
 ```
-Buka browser Anda dan akses alamat `http://127.0.0.1:5000`. Anda dapat login menggunakan akun Google, memindai wajah via kamera web di halaman web secara real-time, mengunggah file foto statis, dan melihat grafik riwayat emosi yang sinkron ke database.
+Open your browser and navigate to `http://127.0.0.1:5000`. You can log in using your Google account, analyze your facial expression in real-time via camera, upload a photo, and view your emotion logs on a dynamic telemetry chart.
 
 ---
 
-## ☁️ Deployment Produksi (Railway)
+## ☁️ Production Deployment (Railway)
 
-Aplikasi web Flask ini dikonfigurasi untuk berjalan di platform cloud **Railway** dengan tautan langsung berikut:
+This Flask web application is configured for deployment on **Railway** and is live at:
 👉 **[https://zenstudy.up.railway.app/](https://zenstudy.up.railway.app/)**
 
-### 1. Konfigurasi Deployment di Railway
-Proyek ini siap dideploy menggunakan file konfigurasi yang disediakan:
-* **[Procfile](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/Procfile)**: Mendefinisikan perintah server web produksi dengan Gunicorn: `web: gunicorn wsgi:app`.
-* **[wsgi.py](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/wsgi.py)**: Berfungsi sebagai entrypoint server produksi untuk mengimpor aplikasi Flask.
-* **Proxy Fix**: Menggunakan `ProxyFix` dari `werkzeug.middleware.proxy_fix` pada [app.py](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/deployment/app.py) untuk memproses header proxy (`X-Forwarded-Proto`, `X-Forwarded-For`, `X-Forwarded-Host`) secara aman agar Flask dapat menghasilkan URL redirect HTTPS callback OAuth secara akurat.
+### 1. Deployment Configuration on Railway
+The repository includes configuration assets designed for instant Railway integration:
+* **[Procfile](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/Procfile)**: Specifies the production WSGI command using Gunicorn: `web: gunicorn wsgi:app`.
+* **[wsgi.py](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/wsgi.py)**: Serves as the production WSGI entry point importing the Flask app object.
+* **Proxy Fix**: Utilizes Werkzeug's `ProxyFix` middleware inside [app.py](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/deployment/app.py) to securely digest forwarding headers (`X-Forwarded-Proto`, `X-Forwarded-For`, `X-Forwarded-Host`) so Flask can reliably construct OAuth HTTPS redirect URLs.
 
-### 2. Variabel Lingkungan di Railway (Variables)
-Pada panel kontrol proyek di dashboard Railway, tambahkan variabel lingkungan berikut:
-| Nama Variabel | Deskripsi / Contoh Nilai |
+### 2. Environment Variables in Railway (Variables)
+Add the following variables to your Railway project control panel:
+| Variable Name | Description / Example Value |
 | :--- | :--- |
-| `SUPABASE_URL` | URL endpoint proyek Supabase Anda (`https://xxx.supabase.co`) |
-| `SUPABASE_KEY` | Anon public API key milik Supabase Anda |
-| `FLASK_SECRET_KEY` | Kunci acak aman untuk mengenkripsi cookie session Flask |
-| `REDIRECT_URL` | Diarahkan ke callback produksi: `https://zenstudy.up.railway.app/auth/callback` |
-| `PORT` | *Opsional* (Railway akan menyediakan port ini secara otomatis, default: `5000`) |
+| `SUPABASE_URL` | Supabase project URL endpoint (`https://xxx.supabase.co`) |
+| `SUPABASE_KEY` | Supabase anon public API key |
+| `FLASK_SECRET_KEY` | A secure random key to encrypt Flask session cookies |
+| `REDIRECT_URL` | Points to the production callback URL: `https://zenstudy.up.railway.app/auth/callback` |
+| `PORT` | *Optional* (Railway sets this dynamically, defaults to `5000`) |
 
 ---
 
-## 📊 Metrik Evaluasi & Pemetaan Stres
+## 📊 Evaluation Metrics & Stress Mapping
 
-Pemetaan kategori stres ditentukan berdasarkan probabilitas emosi wajah yang terdeteksi:
-* **Stres**: *Angry* (Marah), *Fearful* (Takut), *Sad* (Sedih)
-* **Non-Stres**: *Disgusted* (Jijik), *Happy* (Senang), *Neutral* (Biasa), *Surprised* (Terkejut)
+Stress mapping is derived from the facial emotion probabilities predicted by the model:
+* **Stress**: *Angry*, *Fearful*, *Sad*
+* **Non-Stress**: *Disgusted*, *Happy*, *Neutral*, *Surprised*
 
-Seluruh data performa pelatihan dan visualisasi metrik model dapat dipantau langsung pada berkas hasil yang berada di folder [output/plots/](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/output/plots).
+All training performance metrics, plots, and figures are exported and can be reviewed in detail under the [output/plots/](file:///e:/8th%20Sem%20UUM/Neural%20Network/Assignment03/Emotion-detection/output/plots) directory.
