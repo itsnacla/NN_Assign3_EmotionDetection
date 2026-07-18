@@ -125,10 +125,9 @@ model.add(Dropout(0.25))
 
 model.add(Flatten())
 model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.5)) #try 0.1 0.2
 model.add(Dense(7, activation='softmax'))
 
-# If you want to train the same model or try other models, go for this
 if mode == "train":
     model.compile(
         loss='categorical_crossentropy',

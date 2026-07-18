@@ -12,7 +12,8 @@ const beepCooldownMs = 3000; // 3 seconds cooldown between alerts
 
 // State Variables for Stress Intervention Modal
 let isStressModalActive = false;
-let consecutiveStressTicks = 0;
+let stress_counter = 0;
+let hasAlerted = false;
 let breathingIntervalId = null;
 
 // Telemetry History Graph
@@ -55,6 +56,7 @@ const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 const processingInfo = document.getElementById('processing-info');
 const dominantEmotionBadge = document.getElementById('dominant-emotion-badge');
+const stressCounterBadge = document.getElementById('stress-counter-badge');
 
 // Tab Buttons
 const btnWebcamMode = document.getElementById('btn-webcam-mode');
@@ -507,30 +509,64 @@ function updateMetrics(dominant, scores) {
         }
     }
     
-    // Play stress alarm and track consecutive ticks to trigger the guided breathing modal
+    // Calculate Stress Level (0-100%)
     const stressEmotions = ['Angry', 'Fearful', 'Sad'];
-    if (stressEmotions.includes(dominant) && scores[dominant] > 0.40) {
-        consecutiveStressTicks++;
-        
-        // Trigger beep alert
-        const now = Date.now();
-        if (now - lastBeepTime > beepCooldownMs) {
-            lastBeepTime = now;
-            playBeep(880, 0.5); // Play warning beep
-        }
-        
-        // If user remains stressed for 5 consecutive ticks (~1 second of continuous stress), trigger intervention
-        if (consecutiveStressTicks >= 5 && !isStressModalActive) {
+    let stressLevel = 10; // Baseline for calm emotions
+    if (stressEmotions.includes(dominant)) {
+        stressLevel = scores[dominant] * 100;
+    }
+    
+    // Track stress counter persistence
+    if (stressLevel > 40) {
+        stress_counter++;
+        if (stress_counter >= 5 && !hasAlerted && !isStressModalActive) {
             triggerStressIntervention();
+            hasAlerted = true;
         }
     } else {
-        consecutiveStressTicks = 0;
+        stress_counter = 0;
+        hasAlerted = false;
+    }
+    
+    // Display the current counter value on the dashboard
+    if (stressCounterBadge) {
+        stressCounterBadge.textContent = `Stress Counter: ${stress_counter}/5`;
+        if (stress_counter >= 5) {
+            stressCounterBadge.className = 'badge detected';
+            stressCounterBadge.style.backgroundColor = '#ff416c';
+            stressCounterBadge.style.color = '#ffffff';
+            stressCounterBadge.style.boxShadow = '0 0 10px rgba(255, 65, 108, 0.5)';
+            stressCounterBadge.style.borderColor = 'transparent';
+        } else if (stress_counter > 0) {
+            stressCounterBadge.className = 'badge detected';
+            stressCounterBadge.style.backgroundColor = '#f1a80a';
+            stressCounterBadge.style.color = '#ffffff';
+            stressCounterBadge.style.boxShadow = '0 0 10px rgba(241, 168, 10, 0.5)';
+            stressCounterBadge.style.borderColor = 'transparent';
+        } else {
+            stressCounterBadge.className = 'badge';
+            stressCounterBadge.style.backgroundColor = '';
+            stressCounterBadge.style.color = '';
+            stressCounterBadge.style.boxShadow = '';
+            stressCounterBadge.style.borderColor = '';
+        }
     }
 }
 
 function resetMetrics() {
     dominantEmotionBadge.textContent = 'No face detected';
     dominantEmotionBadge.className = 'badge';
+    
+    stress_counter = 0;
+    hasAlerted = false;
+    if (stressCounterBadge) {
+        stressCounterBadge.textContent = 'Stress Counter: 0/5';
+        stressCounterBadge.className = 'badge';
+        stressCounterBadge.style.backgroundColor = '';
+        stressCounterBadge.style.color = '';
+        stressCounterBadge.style.boxShadow = '';
+        stressCounterBadge.style.borderColor = '';
+    }
     
     const emotions = ['Angry', 'Disgusted', 'Fearful', 'Happy', 'Neutral', 'Sad', 'Surprised'];
     emotions.forEach(emotion => {
@@ -706,7 +742,6 @@ function updateTelemetryChart(logs) {
 // Show the Guided Breathing Wellness Modal and pause capturing
 function triggerStressIntervention() {
     isStressModalActive = true;
-    consecutiveStressTicks = 0;
     
     // Stop the webcam capture loop visually
     stopFrameLoop();
